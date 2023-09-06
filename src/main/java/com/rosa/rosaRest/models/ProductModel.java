@@ -2,6 +2,7 @@ package com.rosa.rosaRest.models;
 
 import com.rosa.rosaRest.Enum.StatusEnum;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 
@@ -22,13 +23,19 @@ public class ProductModel {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
+    @NotBlank
     private String name;
+    @NotBlank
     private StatusEnum status;
     private String destination;
+    @Min(1) @Max(20)
     private Integer profitRate;
+    @Min(0) @Max(48)
     private Integer term;
     private Double administrationRate;
+    @FutureOrPresent
     private LocalDate dueDate;
+    @NotBlank
     private Boolean dailyLiquidity;
 
     public UUID getId() {

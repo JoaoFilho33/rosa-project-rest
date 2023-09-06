@@ -4,10 +4,15 @@ import com.rosa.rosaRest.Enum.StatusEnum;
 import com.rosa.rosaRest.dtos.ProductRecordDto;
 import com.rosa.rosaRest.models.ProductModel;
 import com.rosa.rosaRest.repositories.ProductRepository;
+//import io.swagger.v3.oas.annotations.Operation;
+//import io.swagger.v3.oas.annotations.responses.ApiResponse;
+//import io.swagger.v3.oas.annotations.responses.ApiResponses;
+//import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,15 +22,18 @@ import java.util.Optional;
 import java.util.UUID;
 
 @RestController
+//@RequestMapping(value = "/open-api", produces = {"application/json"})
+//@Tag(name = "open-api")
 public class ProductController {
     @Autowired
     ProductRepository productRepository;
 
     @PostMapping("/products")
-    public ResponseEntity<ProductModel> saveProduct(@RequestBody @Valid ProductRecordDto productRecordDto) {
+    public ResponseEntity<Object> saveProduct(@RequestBody @Valid ProductRecordDto productRecordDto) {
         var productModel = new ProductModel();
         BeanUtils.copyProperties(productRecordDto, productModel);
-        return ResponseEntity.status(HttpStatus.CREATED).body(productRepository.save(productModel));
+        ProductModel savedProduct = productRepository.save(productModel);
+        return ResponseEntity.status(HttpStatus.CREATED).body(savedProduct);
     }
 
     @GetMapping("/products")
@@ -46,7 +54,8 @@ public class ProductController {
 
         // Ordenação
         if ("name".equalsIgnoreCase(sort)) {
-            products.sort(Comparator.comparing(ProductModel::getName));
+            //products.sort(Comparator.comparing(ProductModel::getName));
+            products.sort(Comparator.comparing(p -> p.getName().toLowerCase()));
         }
 
         return ResponseEntity.status(HttpStatus.OK).body(products);
@@ -68,19 +77,27 @@ public class ProductController {
     }
 
     @PutMapping("/products/{id}")
-    public ResponseEntity<Object> updateProduct(@PathVariable(value="id") UUID id,
-                                                @RequestBody @Valid ProductRecordDto productRecordDto) {
-        Optional<ProductModel> product0 = productRepository.findById(id);
-        if(product0.isEmpty()) {
+    public ResponseEntity<Object> updateProduct(@PathVariable(value = "id") UUID id, @RequestBody @Valid ProductRecordDto productRecordDto) {
+        if (id == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("ID inválido");
+        }
+
+        Optional<ProductModel> productOptional = productRepository.findById(id);
+        if (productOptional.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Product not found");
         }
-        var productModel = product0.get();
+
+        var productModel = productOptional.get();
         BeanUtils.copyProperties(productRecordDto, productModel);
+
         return ResponseEntity.status(HttpStatus.OK).body(productRepository.save(productModel));
     }
-
     @PutMapping("/products/{id}/status")
     public ResponseEntity<Object> updateProductStatus(@PathVariable(value = "id") UUID id) {
+        if (id == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("ID inválido");
+        }
+
         Optional<ProductModel> optionalProduct = productRepository.findById(id);
 
         if (optionalProduct.isEmpty()) {
@@ -95,16 +112,22 @@ public class ProductController {
         return ResponseEntity.status(HttpStatus.OK).body("Product status updated successfully");
     }
 
+
     @DeleteMapping("/products/{id}")
-    public ResponseEntity<Object> deleteProduct(@PathVariable(value="id") UUID id) {
-        Optional<ProductModel> product0 = productRepository.findById(id);
-        if(product0.isEmpty()) {
+    public ResponseEntity<Object> deleteProduct(@PathVariable(value = "id") UUID id) {
+        if (id == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("ID inválido");
+        }
+
+        Optional<ProductModel> productOptional = productRepository.findById(id);
+
+        if (productOptional.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Product not found");
         }
-        productRepository.delete(product0.get());
-        return ResponseEntity.status(HttpStatus.OK).body("Product delete successfully");
-    }
 
+        productRepository.delete(productOptional.get());
+        return ResponseEntity.status(HttpStatus.OK).body("Product deleted successfully");
+    }
 
 
 }
